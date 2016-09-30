@@ -9,6 +9,7 @@ iOS 8 提供的Photos.framework 让我们可以更加容易的获得 Image,Video
 - Photos.framework
 - 支持 armv7/armv7s/arm64
 ## 示例
+
 ```objc
 PHImageRequestOptions *options = [[PHImageRequestOptions alloc] init];
 options.deliveryMode = PHImageRequestOptionsDeliveryModeOpportunistic;
