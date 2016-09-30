@@ -10,6 +10,7 @@ iOS 8 提供的Photos.framework 让我们可以更加容易的获得 Image,Video
 - 支持 armv7/armv7s/arm64
 
 ## 示例
+![](https://github.com/bird-xiong/XXPhotoPicker/blob/master/XXPhotoPicker/md_1.png)       ![](https://github.com/bird-xiong/XXPhotoPicker/blob/master/XXPhotoPicker/md_2.png)![](https://github.com/bird-xiong/XXPhotoPicker/blob/master/XXPhotoPicker/md_3.png)
 ```objc
 PHImageRequestOptions *options = [[PHImageRequestOptions alloc] init];
 options.deliveryMode = PHImageRequestOptionsDeliveryModeOpportunistic;
@@ -31,3 +32,9 @@ PHImageRequestID ID =
 
 ## 依赖
 本项目使用Masonry 写界面布局，运行前请在项目根目录执行`pod install` 命令
+本项目使用pod版本为1.0.1，使用前先使用以下命令升级pod版本
+```shell
+$ sudo gem update --system
+$ sudo gem install cocoapods
+$ pod setup
+```
