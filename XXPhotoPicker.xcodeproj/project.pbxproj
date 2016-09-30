@@ -19,6 +19,9 @@
 		3C2409011D9229130096103C /* XXAssetGridViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C2409001D9229130096103C /* XXAssetGridViewController.m */; };
 		3C2409031D9229490096103C /* Photos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C2409021D9229490096103C /* Photos.framework */; };
 		3C2409091D922D7C0096103C /* XXGridViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 3C2409081D922D7C0096103C /* XXGridViewCell.m */; };
+		3CB94AE01D9ED3A5003B8694 /* md_1.png in Resources */ = {isa = PBXBuildFile; fileRef = 3CB94ADD1D9ED3A5003B8694 /* md_1.png */; };
+		3CB94AE11D9ED3A5003B8694 /* md_2.png in Resources */ = {isa = PBXBuildFile; fileRef = 3CB94ADE1D9ED3A5003B8694 /* md_2.png */; };
+		3CB94AE21D9ED3A5003B8694 /* md_3.png in Resources */ = {isa = PBXBuildFile; fileRef = 3CB94ADF1D9ED3A5003B8694 /* md_3.png */; };
 		3CBCF89E1D93A81800A39E80 /* XXAssetViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 3CBCF89D1D93A81800A39E80 /* XXAssetViewController.m */; };
 		3CBCF8A11D93A92400A39E80 /* XXAssetViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 3CBCF8A01D93A92400A39E80 /* XXAssetViewCell.m */; };
 		3CDE70311D928B7F00FCC6A4 /* XXPhotoAlbumViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 3CDE70301D928B7F00FCC6A4 /* XXPhotoAlbumViewController.m */; };
@@ -72,6 +75,9 @@
 		3C2409021D9229490096103C /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
 		3C2409071D922D7C0096103C /* XXGridViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XXGridViewCell.h; sourceTree = "<group>"; };
 		3C2409081D922D7C0096103C /* XXGridViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XXGridViewCell.m; sourceTree = "<group>"; };
+		3CB94ADD1D9ED3A5003B8694 /* md_1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = md_1.png; sourceTree = "<group>"; };
+		3CB94ADE1D9ED3A5003B8694 /* md_2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = md_2.png; sourceTree = "<group>"; };
+		3CB94ADF1D9ED3A5003B8694 /* md_3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = md_3.png; sourceTree = "<group>"; };
 		3CBCF89C1D93A81800A39E80 /* XXAssetViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XXAssetViewController.h; sourceTree = "<group>"; };
 		3CBCF89D1D93A81800A39E80 /* XXAssetViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XXAssetViewController.m; sourceTree = "<group>"; };
 		3CBCF89F1D93A92400A39E80 /* XXAssetViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XXAssetViewCell.h; sourceTree = "<group>"; };
@@ -167,6 +173,9 @@
 		3C2408C81D9228390096103C /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				3CB94ADD1D9ED3A5003B8694 /* md_1.png */,
+				3CB94ADE1D9ED3A5003B8694 /* md_2.png */,
+				3CB94ADF1D9ED3A5003B8694 /* md_3.png */,
 				3C2408C91D9228390096103C /* main.m */,
 			);
 			name = "Supporting Files";
@@ -342,6 +351,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3CB94AE01D9ED3A5003B8694 /* md_1.png in Resources */,
+				3CB94AE11D9ED3A5003B8694 /* md_2.png in Resources */,
+				3CB94AE21D9ED3A5003B8694 /* md_3.png in Resources */,
 				3C2408D81D9228390096103C /* LaunchScreen.storyboard in Resources */,
 				3C2408D51D9228390096103C /* Assets.xcassets in Resources */,
 				3C2408D31D9228390096103C /* Main.storyboard in Resources */,

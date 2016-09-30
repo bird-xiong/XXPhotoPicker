@@ -294,6 +294,11 @@ static NSString *const ReusableRightIdentifier      = @"ReusableRightIdentifier"
     label.hidden = [count integerValue] < 1;
     label.text = count.description;
 }
+#pragma mark - XXAssetViewCellDelegate
+- (void)assetViewTaped{
+    _customBar.hidden   = !_customBar.hidden;
+    _customTool.hidden  = !_customTool.hidden;
+}
 #pragma mark - bar
 - (void)select:(id)sender{
     UIButton *btn = (UIButton *)sender;
