@@ -85,7 +85,9 @@
         CGFloat scale = MIN(widthScale, heightScale);
         self.scrollView.maximumZoomScale = 1/scale;
         self.scrollView.minimumZoomScale = 1;
-        self.scrollView.zoomScale = 1;
+        if (self.scrollView.zoomScale != 1.0f) {
+            self.scrollView.zoomScale = 1.0f;
+        }
         
         imageWidth  = imageWidth*scale;
         imageHeight = imageHeight*scale;
@@ -98,16 +100,15 @@
 - (void)prepareForReuse {
     [super prepareForReuse];
     
-    [self cancelPreviousRequest];
-    self.requestID = PHInvalidImageRequestID;
-    self.imageView.image = nil;
-    self.asset = nil;
-    self.preheatImage = nil;
+//    [self cancelPreviousRequest];
+//    self.requestID = PHInvalidImageRequestID;
+//    self.imageView.image = nil;
+//    self.asset = nil;
+//    self.preheatImage = nil;
 }
 const static CGFloat xxAssetImageMaxPixel = 3660;
 - (void)setAsset:(PHAsset *)asset{
     if (asset != _asset) {
-        
         [self adjustFrame];
         [self cancelPreviousRequest];
         
@@ -117,9 +118,10 @@ const static CGFloat xxAssetImageMaxPixel = 3660;
             __weak typeof(self) WeakSelf = self;
             PHImageRequestOptions *options = [[PHImageRequestOptions alloc] init];
             options.deliveryMode = PHImageRequestOptionsDeliveryModeOpportunistic;
-            options.resizeMode = PHImageRequestOptionsResizeModeExact;
+//            options.resizeMode = PHImageRequestOptionsResizeModeExact;
             CGFloat maxPixel = MAX(asset.pixelWidth, asset.pixelHeight);
-            maxPixel = MIN(maxPixel, xxAssetImageMaxPixel);
+//            maxPixel = MIN(maxPixel, xxAssetImageMaxPixel);
+            maxPixel = xxAssetImageMaxPixel;
             CGSize size = CGSizeMake(maxPixel, maxPixel);
             __block BOOL isHighQualityAynchronous = NO;
             __block BOOL aynchronousHelper = NO;
@@ -141,11 +143,14 @@ const static CGFloat xxAssetImageMaxPixel = 3660;
                                                   (([info[PHImageResultRequestIDKey] integerValue] == WeakSelf.requestID
                                                     && WeakSelf.requestID != PHInvalidImageRequestID)
                                                    || !aynchronousHelper)){
-                                                      //                                              NSLog(@"%@",NSStringFromCGSize(result.size));
+//                                                      NSLog(@"%@",NSStringFromCGSize(result.size));
                                                       WeakSelf.imageView.image = result;
                                                       WeakSelf.requestID = PHInvalidImageRequestID;
                                                       [WeakSelf adjustFrame];
                                                   }
+                                          else{
+                                              NSLog(@"no");
+                                          }
                                           if (!aynchronousHelper && !degraded) {
                                               isHighQualityAynchronous = YES;
                                           }

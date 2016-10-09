@@ -21,11 +21,15 @@ alpha:1.0]
 @property (nonatomic, strong) UICollectionViewFlowLayout *collectionViewLayout;
 @property (nonatomic, strong) PHCachingImageManager *imageManager;
 @property (nonatomic, assign) NSInteger firstLoad;
+@property (nonatomic, assign) NSInteger fetchCount;
+@property (nonatomic, assign) NSInteger previousPage;
 
 @property (nonatomic, strong) UIView *customBar;
 @property (nonatomic, strong) UIView *customTool;
+@property (nonatomic, strong) UIButton *selectButton;
 @property (nonatomic, strong) NSMutableArray *reusableCells;
 @property (nonatomic, strong) NSMutableArray *reusableImages; //only for first load
+@property (nonatomic, assign) NSRange previousCachedRange;
 @end
 @implementation XXAssetViewController
 static NSString *const ReusableLeftCellIdentifier   = @"ReusableLeftCellIdentifier";
@@ -61,8 +65,8 @@ static NSString *const ReusableRightIdentifier      = @"ReusableRightIdentifier"
         make.width.equalTo(self.view);
         make.height.mas_equalTo(45);
     }];
-    
-    if (_assetsFetchResults.count > _visiableAssetIndex) {
+    self.fetchCount = _assetsFetchResults.count;
+    if (_fetchCount > _visiableAssetIndex) {
         PHAsset *asset  = self.assetsFetchResults[_visiableAssetIndex];
         self.title
         = asset.burstIdentifier;
@@ -112,6 +116,7 @@ static NSString *const ReusableRightIdentifier      = @"ReusableRightIdentifier"
 - (void)viewWillDisappear:(BOOL)animated{
     [super viewWillDisappear:animated];
     [[XXPhotoPicker shareInstance] removePhotoChangeListener:self];
+    [self resetCachedAssets];
 }
 - (void)back:(id)sender{
     [self.navigationController popViewControllerAnimated:YES];
@@ -154,7 +159,7 @@ static NSString *const ReusableRightIdentifier      = @"ReusableRightIdentifier"
         }
     }
     
-    if (indexPath.item < self.assetsFetchResults.count-1) {
+    if (indexPath.item < _fetchCount-1) {
         PHAsset *asset = self.assetsFetchResults[indexPath.item+1];
         if (rightCell != nil) {
             rightCell.asset = asset;
@@ -228,9 +233,67 @@ static NSString *const ReusableRightIdentifier      = @"ReusableRightIdentifier"
     }];
     return cell;
 }
+
+#pragma mark - Asset Caching
+#define MaxCaching 13
+#define CacheGap 5
+- (void)resetCachedAssets {
+    [self.imageManager stopCachingImagesForAllAssets];
+    self.previousCachedRange = NSMakeRange(0, 0);
+}
+- (void)updateCachedAssetsForCurrentIndex:(NSInteger)index{
+    BOOL isViewVisible = [self isViewLoaded] && [[self view] window] != nil;
+    if (!isViewVisible) { return; }
+    
+    if (_fetchCount > 0) {
+        NSInteger left = (MaxCaching -1)/2;
+        NSInteger right= MaxCaching -1 - left;
+        left = MIN(left, index);
+        right= MIN(right, _fetchCount - index-1);
+        
+        NSRange range = NSMakeRange(index - left, left +right+1);
+        NSInteger delta = ABS((int)range.location - (int)_previousCachedRange.location);
+        if (delta > CacheGap) {
+            NSRange removeRange = _previousCachedRange;
+            NSRange addRange    = range;
+            
+            NSRange result = NSIntersectionRange(range, _previousCachedRange);
+            if (result.location != NSNotFound && result.length >0) {
+                if (range.location > _previousCachedRange.location) {
+                    addRange = NSMakeRange( _previousCachedRange.location + _previousCachedRange.length, range.location + range.length - (_previousCachedRange.location + _previousCachedRange.length));
+                    removeRange = NSMakeRange(_previousCachedRange.location, range.location - _previousCachedRange.location);
+                }
+                else{
+                    addRange = NSMakeRange( range.location,  _previousCachedRange.location - range.location);
+                    removeRange =  NSMakeRange( range.location + range.length, _previousCachedRange.location + _previousCachedRange.length - (range.location + range.length));
+                }
+            }
+            
+            NSArray *assetsToStartCaching   = [_assetsFetchResults objectsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:addRange]];
+            NSArray *assetsToStopCaching    = [_assetsFetchResults objectsAtIndexes:[NSIndexSet indexSetWithIndexesInRange:removeRange]];
+            
+            PHImageRequestOptions *options = [[PHImageRequestOptions alloc] init];
+            options.deliveryMode = PHImageRequestOptionsDeliveryModeOpportunistic;
+//            options.resizeMode = PHImageRequestOptionsResizeModeExact;
+            CGSize size = CGSizeMake(3660, 3660);
+            
+            [self.imageManager startCachingImagesForAssets:assetsToStartCaching
+                                                targetSize:size
+                                               contentMode:PHImageContentModeAspectFit
+                                                   options:options];
+            [self.imageManager stopCachingImagesForAssets:assetsToStopCaching
+                                               targetSize:size
+                                              contentMode:PHImageContentModeAspectFit
+                                                  options:options];
+
+            
+            _previousCachedRange = range;
+        }
+    }
+}
 #pragma mark - UICollectionViewDataSource
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    return self.assetsFetchResults.count;
+    return _fetchCount;
 }
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
     PHAsset *asset = self.assetsFetchResults[indexPath.item];
@@ -250,9 +313,8 @@ static NSString *const ReusableRightIdentifier      = @"ReusableRightIdentifier"
         }
         [self removePreheatImageForAsset:asset];
     }
-
     [self getNearByPrepareReuseAtIndexPath:indexPath];
-    
+    [self updateCachedAssetsForCurrentIndex:indexPath.item];
     return cell;
 }
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
@@ -273,10 +335,10 @@ static NSString *const ReusableRightIdentifier      = @"ReusableRightIdentifier"
         page ++;
     }
     
-    if (page < self.assetsFetchResults.count) {
-        PHAsset *asset = self.assetsFetchResults[page];
-        UIButton *button = [_customBar viewWithTag:0x99];
-        button.selected = [[XXPhotoPicker shareInstance] photoSelected:asset];
+    if (_previousPage != page && page < _fetchCount) {
+        PHAsset *asset = [self.assetsFetchResults objectAtIndex:page];
+        _selectButton.selected = [[XXPhotoPicker shareInstance] photoSelected:asset];
+        _previousPage = page;
     }
 }
 #pragma mark - UICollectionViewDelegateFlowLayout
@@ -339,7 +401,6 @@ static NSString *const ReusableRightIdentifier      = @"ReusableRightIdentifier"
     
     
     UIButton *selectButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    selectButton.tag = 0x99;
     [selectButton setImage:[UIImage imageNamed:@"feedback_btn_ok"] forState:UIControlStateNormal];
     [selectButton setImage:[UIImage imageNamed:@"feedback_btn_okin"] forState:UIControlStateSelected];
     [selectButton addTarget:self action:@selector(select:) forControlEvents:UIControlEventTouchUpInside];
@@ -349,7 +410,7 @@ static NSString *const ReusableRightIdentifier      = @"ReusableRightIdentifier"
         make.centerY.equalTo(bar).offset(10);
         make.right.equalTo(bar).offset(-15);
     }];
-    
+    _selectButton = selectButton;
     return bar;
 }
 - (UIView *)customToolBar{

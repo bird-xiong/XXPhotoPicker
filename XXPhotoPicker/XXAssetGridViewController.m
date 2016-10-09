@@ -100,19 +100,26 @@ alpha:1.0]
 static NSString *const GridViewCellIdentifier = @"GridViewCellIdentifier";
 static CGSize AssetGridThumbnailSize;
 - (void)dealloc {
-    [[PHPhotoLibrary sharedPhotoLibrary] unregisterChangeObserver:self];
+    if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusAuthorized) {
+        [[PHPhotoLibrary sharedPhotoLibrary] unregisterChangeObserver:self];
+    }
 }
 - (id)init{
     self = [super init];
     if (self) {
         if (!_assetsFetchResults) {
             self.title = @"相册";
-            [self fetchAssets];
+            if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusAuthorized) {
+                [self fetchAssets];
+            }
         }
-        self.imageManager = [[PHCachingImageManager alloc] init];
-        
-        [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
-        [self resetCachedAssets];
+        [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
+            if (status == PHAuthorizationStatusAuthorized) {
+                self.imageManager = [[PHCachingImageManager alloc] init];
+                [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
+                [self resetCachedAssets];
+            }
+        }];
     }
     return self;
 }
@@ -155,6 +162,12 @@ static CGSize AssetGridThumbnailSize;
 }
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusDenied) {
+        UIAlertView *alert =
+        [[UIAlertView alloc] initWithTitle:nil message:@"请在iPhone的“设置－隐私－照片”选项中，允许荷包访问你的手机相册。" delegate:nil cancelButtonTitle:@"好的" otherButtonTitles:nil, nil];
+        [alert show];
+    }
 
     // Do any additional setup after loading the view.
     UIBarButtonItem *barButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self action:@selector(cancel:)];
@@ -282,7 +295,9 @@ static CGSize AssetGridThumbnailSize;
 #pragma mark - Asset Caching
 
 - (void)resetCachedAssets {
-    [self.imageManager stopCachingImagesForAllAssets];
+    if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusAuthorized) {
+          [self.imageManager stopCachingImagesForAllAssets];
+    }
     self.previousPreheatRect = CGRectZero;
 }
 
