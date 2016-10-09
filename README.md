@@ -1,4 +1,4 @@
-# XXPhotoPicker
+# PhotoPicker
 XXPhotoPicker 最终希望能达到的性能标准是系统的照片应用。
 
 iOS 8 提供的Photos.framework 让我们可以更加容易的获得 Image,Video,Audio,LivePhoto资源，你基本上可以获得所有的照片信息来使你的App在交互和内容上更加自由和丰富。你可以非常自由的创建自己的相册，你可以编辑图片，你可以同步iCloud上的照片，甚至你可以创造出一个跟照片一模一样的应用。
