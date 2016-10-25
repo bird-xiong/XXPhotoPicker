@@ -11,6 +11,5 @@
 @import Photos;
 
 @interface XXAssetGridViewController : UIViewController
-@property (nonatomic, strong) PHFetchResult *assetsFetchResults;
 @property (nonatomic, strong) PHAssetCollection *assetCollection;
 @end

@@ -86,11 +86,12 @@ alpha:1.0]
 @end
 
 @interface XXAssetGridViewController () <UICollectionViewDataSource, UICollectionViewDelegate, PHPhotoLibraryChangeObserver, XXGridViewCellDelegate, XXPhotoPickerDataObserve>
+@property (nonatomic, strong) PHFetchResult *assetsFetchResults;
 @property (nonatomic, strong) UICollectionView *collectionView;
 @property (nonatomic, strong) UICollectionViewFlowLayout *collectionViewLayout;
 @property (nonatomic, strong) PHCachingImageManager *imageManager;
 @property (nonatomic, strong) XXAssetGridStatusBar *statusBar;
-
+@property (nonatomic, strong) UIView *authorizationView;
 @property (nonatomic, assign) NSInteger firstLoad;
 @property CGRect previousPreheatRect;
 @end
@@ -107,18 +108,29 @@ static CGSize AssetGridThumbnailSize;
 - (id)init{
     self = [super init];
     if (self) {
-        if (!_assetsFetchResults) {
-            self.title = @"相册";
-            if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusAuthorized) {
-                [self fetchAssets];
-            }
-        }
+        PHAuthorizationStatus origin = [PHPhotoLibrary authorizationStatus];
         [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
             if (status == PHAuthorizationStatusAuthorized) {
                 self.imageManager = [[PHCachingImageManager alloc] init];
                 [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
                 [self resetCachedAssets];
+                
+                //有可能不会触发 PHPhotoLibraryChangeObserver 的方法，需要手动刷新下
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (origin == PHAuthorizationStatusNotDetermined) {
+                        [self fetchAssets];
+                        [self.collectionView reloadData];
+                    }
+                });
             }
+            else if (status == PHAuthorizationStatusDenied){
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self.navigationItem setHidesBackButton:YES];
+                    [self showAuthorizationView];
+                    _statusBar.hidden = YES;
+                });
+            }
+            
         }];
     }
     return self;
@@ -155,18 +167,28 @@ static CGSize AssetGridThumbnailSize;
  
 }
 - (void)fetchAssets{
-    PHFetchOptions *allPhotosOptions = [[PHFetchOptions alloc] init];
-    allPhotosOptions.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:YES]];
-    PHFetchResult *allPhotos = [PHAsset fetchAssetsWithMediaType:PHAssetMediaTypeImage options:allPhotosOptions];
-    self.assetsFetchResults = allPhotos;
+    if (_assetCollection) {
+        PHFetchOptions *options = [[PHFetchOptions alloc] init];
+        options.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:YES]];
+        PHFetchResult *fetchResult =
+        [PHAsset fetchAssetsInAssetCollection:_assetCollection options:options];
+        self.assetsFetchResults = fetchResult;
+    }
+    else{
+        PHFetchOptions *allPhotosOptions = [[PHFetchOptions alloc] init];
+        allPhotosOptions.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate" ascending:YES]];
+        PHFetchResult *allPhotos = [PHAsset fetchAssetsWithMediaType:PHAssetMediaTypeImage options:allPhotosOptions];
+        self.assetsFetchResults = allPhotos;
+    }
 }
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusDenied) {
-        UIAlertView *alert =
-        [[UIAlertView alloc] initWithTitle:nil message:@"请在iPhone的“设置－隐私－照片”选项中，允许荷包访问你的手机相册。" delegate:nil cancelButtonTitle:@"好的" otherButtonTitles:nil, nil];
-        [alert show];
+    if (!_assetCollection) {
+        self.title = @"相册";
+    }
+    if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusAuthorized) {
+        [self fetchAssets];
     }
 
     // Do any additional setup after loading the view.
@@ -209,6 +231,12 @@ static CGSize AssetGridThumbnailSize;
 
     }];
     _statusBar = statusBar;
+    
+    if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusDenied) {
+        [self.navigationItem setHidesBackButton:YES];
+        [self showAuthorizationView];
+        _statusBar.hidden = YES;
+    }
 }
 
 - (void)didReceiveMemoryWarning {
@@ -275,6 +303,16 @@ static CGSize AssetGridThumbnailSize;
     dispatch_async(dispatch_get_main_queue(), ^{
         [self fetchAssets];
         [self.collectionView reloadData];
+        if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusDenied) {
+            [self.navigationController.navigationItem setHidesBackButton:YES];
+            [self showAuthorizationView];
+            _statusBar.hidden = YES;
+        }
+        else if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusAuthorized){
+            [self.navigationController.navigationItem setHidesBackButton:NO];
+            [self hideAuthorizationView];
+            _statusBar.hidden   = NO;
+        }
     });
 }
 
@@ -390,5 +428,35 @@ static CGSize AssetGridThumbnailSize;
     
     return assets;
 }
-
+#pragma mark - authorization failed view
+- (void)showAuthorizationView{
+    if (_authorizationView && _authorizationView.superview) {
+        return;
+    }
+    UIView *view = [[UIView alloc] init];
+    [self.view addSubview:view];
+    [view mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.equalTo(self.view);
+    }];
+    
+    UILabel *label = [[UILabel alloc] init];
+    label.text = @"请在iPhone的“设置－隐私－照片”\n中，允许访问你的手机相册。";
+    label.textColor = UIColorFromRGB(0xa5a5a5);
+    label.numberOfLines = 0;
+    label.textAlignment = NSTextAlignmentCenter;
+    label.font = [UIFont systemFontOfSize:14];
+    [view addSubview:label];
+    [label mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.center.equalTo(view);
+        make.left.equalTo(view).offset(50);
+        make.right.equalTo(view).offset(-50);
+    }];
+    _authorizationView = view;
+}
+- (void)hideAuthorizationView{
+    if (_authorizationView) {
+        [_authorizationView removeFromSuperview];
+        _authorizationView  = nil;
+    }
+}
 @end

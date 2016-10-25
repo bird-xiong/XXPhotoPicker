@@ -13,27 +13,31 @@
 #import "XXPhotoPicker.h"
 
 @import Photos;
-@interface XXPhotoAlbumViewController () <UITableViewDelegate, UITableViewDataSource>
+@interface XXPhotoAlbumViewController () <UITableViewDelegate, UITableViewDataSource, PHPhotoLibraryChangeObserver>
 @property (nonatomic, strong) NSArray *fetchResults;
 @property (nonatomic, strong) UITableView *tableView;
 @end
 
 @implementation XXPhotoAlbumViewController
+- (void)dealloc{
+    if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusAuthorized) {
+        [[PHPhotoLibrary sharedPhotoLibrary] unregisterChangeObserver:self];
+    }
+}
 - (id)init{
     self = [super init];
     if (self) {
         self.title = @"照片";
+        if ([PHPhotoLibrary authorizationStatus] == PHAuthorizationStatusAuthorized) {
+            [[PHPhotoLibrary sharedPhotoLibrary] registerChangeObserver:self];
+        }
     }
     return self;
 }
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
-    PHFetchResult *cameraAlbum = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum subtype:PHAssetCollectionSubtypeSmartAlbumUserLibrary options:nil];
-    PHFetchResult *recentlyAlbum = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum subtype:PHAssetCollectionSubtypeSmartAlbumRecentlyAdded options:nil];
-    PHFetchResult *screenshotsAlbum = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum subtype:PHAssetCollectionSubtypeSmartAlbumScreenshots options:nil];
-    
-    _fetchResults = @[cameraAlbum,recentlyAlbum,screenshotsAlbum];
+    [self fetchAssets];
     
     self.view.backgroundColor = [UIColor whiteColor];
     _tableView = [[UITableView alloc] init];
@@ -47,6 +51,13 @@
     
     UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self action:@selector(cancel:)];
     [self.navigationItem setRightBarButtonItem:item];
+}
+- (void)fetchAssets{
+    PHFetchResult *cameraAlbum = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum subtype:PHAssetCollectionSubtypeSmartAlbumUserLibrary options:nil];
+    PHFetchResult *recentlyAlbum = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum subtype:PHAssetCollectionSubtypeSmartAlbumRecentlyAdded options:nil];
+    PHFetchResult *screenshotsAlbum = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum subtype:PHAssetCollectionSubtypeSmartAlbumScreenshots options:nil];
+    
+    _fetchResults = @[cameraAlbum,recentlyAlbum,screenshotsAlbum];
 }
 - (void)cancel:(id)sender{
     [[XXPhotoPicker shareInstance] cancel];
@@ -116,14 +127,17 @@
     PHFetchResult *fetchResult = self.fetchResults[indexPath.row];
     if (fetchResult.count>0) {
         PHAssetCollection *collection = fetchResult[0];
-        fetchResult =
-        [PHAsset fetchAssetsInAssetCollection:collection options:nil];
-        
         XXAssetGridViewController *ctr = [[XXAssetGridViewController alloc] init];
-        ctr.assetsFetchResults = fetchResult;
+        ctr.assetCollection = collection;
         ctr.title = collection.localizedTitle;
         [self.navigationController pushViewController:ctr animated:YES];
     }
-    
+}
+#pragma mark - PHPhotoLibraryChangeObserver
+- (void)photoLibraryDidChange:(PHChange *)changeInstance {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self fetchAssets];
+        [self.tableView reloadData];
+    });
 }
 @end

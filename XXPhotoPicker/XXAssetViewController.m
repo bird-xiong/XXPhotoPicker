@@ -39,6 +39,7 @@ static NSString *const ReusableRightIdentifier      = @"ReusableRightIdentifier"
     self = [super init];
     if (self) {
         self.title = @"";
+        self.previousPage = -1;
         self.imageManager   = [[PHCachingImageManager alloc] init];
         self.reusableCells  = [NSMutableArray array];
         self.reusableImages = [NSMutableArray array];
